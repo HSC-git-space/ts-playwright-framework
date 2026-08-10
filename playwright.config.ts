@@ -7,5 +7,6 @@ export default defineConfig({
   use: {
     baseURL: 'https://the-internet.herokuapp.com',
     actionTimeout: 10000,
+    trace: 'on-first-retry',
   },
 });
