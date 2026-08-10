@@ -9,6 +9,14 @@ test('valid login succeeds', async ({ page }) => {
   await expect(page).toHaveURL(/secure/);
 });
 
+test('context isolation - session not leaked across tests', async ({ page }) => {
+  // no login performed here — if a previous test's session leaked
+  // into this context, we'd land on /secure instead of /login
+  await page.goto('/login');
+  await expect(page).toHaveURL(/login/);
+  await expect(page.locator('h2')).toHaveText('Login Page');
+});
+
 test('invalid login shows error', async ({ page }) => {
   const loginPage = new LoginPage(page);
   await loginPage.goto();
