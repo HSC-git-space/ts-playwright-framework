@@ -1,12 +1,25 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
+import * as XLSX from 'xlsx';
+import path from 'path';
 
-test('valid login succeeds', async ({ page }) => {
-  const loginPage = new LoginPage(page);
-  await loginPage.goto();
-  await loginPage.login('tomsmith', 'SuperSecretPassword!');
-  await expect(page.locator('.flash.success')).toBeVisible();
-  await expect(page).toHaveURL(/secure/);
+const workbook = XLSX.readFile(path.join(__dirname, '../data/login-cases.xlsx'));
+const sheet = workbook.Sheets[workbook.SheetNames[0]];
+const loginCases = XLSX.utils.sheet_to_json<{ username: string; password: string; expectSuccess: boolean }>(sheet);
+
+loginCases.forEach(({ username, password, expectSuccess }, index) => {
+  test(`[${index}] login with username="${username}" expects ${expectSuccess ? 'success' : 'failure'}`, async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login(username, password);
+
+    if (expectSuccess) {
+      await expect(page.locator('.flash.success')).toBeVisible();
+      await expect(page).toHaveURL(/secure/);
+    } else {
+      await expect(page.locator('.flash.error')).toBeVisible();
+    }
+  });
 });
 
 test('context isolation - session not leaked across tests', async ({ page }) => {
@@ -15,13 +28,6 @@ test('context isolation - session not leaked across tests', async ({ page }) => 
   await page.goto('/login');
   await expect(page).toHaveURL(/login/);
   await expect(page.locator('h2')).toHaveText('Login Page');
-});
-
-test('invalid login shows error', async ({ page }) => {
-  const loginPage = new LoginPage(page);
-  await loginPage.goto();
-  await loginPage.login('wronguser', 'wrongpass');
-  await expect(page.locator('.flash.error')).toBeVisible();
 });
 
 test('mocked API failure is handled gracefully', async ({ page }) => {
