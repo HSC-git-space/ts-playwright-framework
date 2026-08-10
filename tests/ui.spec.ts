@@ -88,3 +88,9 @@ test('trace demo - deliberately broken selector', async ({ page }) => {
   await loginPage.goto();
   await page.locator('.this-selector-does-not-exist').click();
 });
+
+test('visual regression - login form appearance', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await expect(page.locator('#login')).toHaveScreenshot('login-form.png');
+});
